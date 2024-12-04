@@ -10,7 +10,7 @@
 /// default constructor
 /// </summary>
 Game::Game() :
-	m_window{ sf::VideoMode{ 1900U, 1200U, 32U }, "SFML Game" },
+	m_window{ sf::VideoMode{ 1000, 1000, 32U }, "SFML Game" },
 	m_exitGame{ false } //when true game will exit
 
 {
@@ -18,7 +18,7 @@ Game::Game() :
 }
 
 /// <summary>
-/// default destructor
+/// default destructor 
 /// </summary>
 Game::~Game()
 {
@@ -84,11 +84,23 @@ void Game::processKeys(sf::Event t_event)
 	}
 	if (sf::Keyboard::Space == t_event.key.code)
 	{
-
+		if (!outOfBounds)
+			placeBuilding();
+	}
+	if (sf::Keyboard::R == t_event.key.code)
+	{
+		currentHoveredCell = nullptr;
+		instructions = construction.rotate(instructions);
 	}
 	if (sf::Keyboard::E == t_event.key.code)
 	{
-
+		currentHoveredCell = nullptr;
+		swapBuilding(1);
+	}
+	if (sf::Keyboard::Q == t_event.key.code)
+	{
+		currentHoveredCell = nullptr;
+		swapBuilding(-1);
 	}
 }
 
@@ -112,7 +124,7 @@ void Game::update(sf::Time t_deltaTime)
 		m_window.close();
 	}
 	mousePosition = getMousePosition(m_window);
-	getCurrentCell();
+	constructCathedral();
 }
 
 /// <summary>
@@ -160,54 +172,63 @@ void Game::initialize()
 	}
 
 	setNeighbours();
+
+	// Construction
+	instructions = construction.instructions[0];
 }
 
-void Game::getCurrentCell()
+void Game::constructCathedral()
 {
-
 	for (auto& row : Grid)
 	{
 		for (Cell& cell : row)
 		{
-			if (&cell != currentCell &&
+			if (&cell != currentHoveredCell &&
 				cell.getShape().getGlobalBounds().contains(mousePosition))
 			{
 				resetAllCells();
-				currentCell = &cell;
+				currentHoveredCell = &cell;
 
-				// Coloring and Checking cells
-
-				std::vector<std::string> instructions;
-				std::string a = "up";
-				instructions.push_back(a);
-				a = "middle";
-				instructions.push_back(a);
-				a = "down";
-				instructions.push_back(a);
-
-				Cell* cellToCheck = currentCell;
+				Cell* cellToCheck = currentHoveredCell;
 				cellToCheck->checkCell();
 
-
-				for (std::string instruction : instructions)
+				for (std::string direction : instructions)
 				{
-					if (instruction == "up")
+					if (direction == "up")
 					{
 						cellToCheck = cellToCheck->up();
 						if (cellToCheck != nullptr)
-						{
 							cellToCheck->checkCell();
-						}
+						if (cellToCheck == nullptr)
+							outOfBounds = true;
 					}
-					else if (instruction == "down")
+					else if (direction == "down")
 					{
 						cellToCheck = cellToCheck->down();
 						if (cellToCheck != nullptr)
 							cellToCheck->checkCell();
+						if (cellToCheck == nullptr)
+							outOfBounds = true;
 					}
-					else if (instruction == "middle")
+					else if (direction == "right")
 					{
-						cellToCheck = currentCell;
+						cellToCheck = cellToCheck->right();
+						if (cellToCheck != nullptr)
+							cellToCheck->checkCell();
+						if (cellToCheck == nullptr)
+							outOfBounds = true;
+					}
+					else if (direction == "left")
+					{
+						cellToCheck = cellToCheck->left();
+						if (cellToCheck != nullptr)
+							cellToCheck->checkCell();
+						if (cellToCheck == nullptr)
+							outOfBounds = true;
+					}
+					else if (direction == "middle")
+					{
+						cellToCheck = currentHoveredCell;
 					}
 				}
 			}
@@ -265,6 +286,7 @@ void Game::setNeighbours()
 
 void Game::resetAllCells()
 {
+	outOfBounds = false;
 	for (auto& row : Grid)
 	{
 		for (Cell& cell : row)
@@ -274,6 +296,58 @@ void Game::resetAllCells()
 	}
 }
 
+void Game::placeBuilding()
+{
+	// Check if any checked cells are blocked
+	bool invalidPlacement = false;
+	for (int o = 0; o < CELL_AMOUNT; o++)
+	{
+		for (int i = 0; i < CELL_AMOUNT; i++)
+		{
+			Cell* currentCell = &Grid[o][i];
+
+			if (currentCell->isBlocked() == true)
+			{
+				invalidPlacement = true;
+			}
+		}
+	}
+	// If no checked cells are blocked, lock them in
+	if (invalidPlacement == false)
+	{
+		for (int o = 0; o < CELL_AMOUNT; o++)
+		{
+			for (int i = 0; i < CELL_AMOUNT; i++)
+			{
+				Cell* currentCell = &Grid[o][i];
+
+				if (currentCell->isChecked() == true && currentCell->isBlocked() == false)
+				{
+					currentCell->lockInCell();
+				}
+			}
+		}
+	}
+}
+
+void Game::swapBuilding(int t_i)
+{
+	const int MAX = construction.instructions.size() - 1;
+	const int MIN = 0;
+
+	currentBuildingChoice += t_i; // Increment or decrement based on direction
+
+	if (currentBuildingChoice > MAX)
+	{
+		currentBuildingChoice = MIN;
+	}
+	else if (currentBuildingChoice < MIN)
+	{
+		currentBuildingChoice = MAX;
+	}
+
+	instructions = construction.instructions[currentBuildingChoice];
+}
 
 sf::Vector2f Game::gridPlacement()
 {

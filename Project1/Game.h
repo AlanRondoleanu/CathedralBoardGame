@@ -10,6 +10,7 @@
 #include <SFML/Audio.hpp>
 #include "Buildings.h"
 #include "Cell.h"
+#include "CathderalConstruction.h"
 
 class Game
 {
@@ -27,17 +28,22 @@ private:
 	void update(sf::Time t_deltaTime);
 	void render();
 	void initialize();
-	void getCurrentCell();
+	void constructCathedral();
 	void setNeighbours();
 	void resetAllCells();
+	void placeBuilding();
+	void swapBuilding(int t_i);
 
 	// Grid
 	int const CELL_AMOUNT{ 10 };
 	std::vector<std::vector<Cell>> Grid;
-	Cell* currentCell;
+	Cell* currentHoveredCell;
 
-	// Buildings
-	Buildings* placementBuilding;
+	// Building Construction
+	CathderalConstruction construction;
+	std::vector<std::string> instructions;
+	bool outOfBounds{ false };
+	int currentBuildingChoice{ 0 };
 
 	sf::Vector2f gridPlacement();
 		

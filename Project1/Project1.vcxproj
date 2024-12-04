@@ -145,12 +145,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Buildings.cpp" />
+    <ClCompile Include="CathderalConstruction.cpp" />
     <ClCompile Include="Cell.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Buildings.h" />
+    <ClInclude Include="CathderalConstruction.h" />
     <ClInclude Include="Cell.h" />
     <ClInclude Include="Game.h" />
   </ItemGroup>

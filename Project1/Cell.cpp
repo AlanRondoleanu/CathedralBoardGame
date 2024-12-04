@@ -17,27 +17,35 @@ void Cell::checkCell()
 {
 	checking = true;
 
-	if (blocked == true)
+	if (lockedIn == true)
 	{
 		shape.setFillColor(sf::Color::Red);
+		blocked = true;
 	}
-	else if (checking == true)
+	else if (checking == true && blocked == false)
 	{
 		shape.setFillColor(sf::Color::Green);
-	}
-	else
-	{
-		shape.setFillColor(sf::Color::White);
 	}
 }
 
 void Cell::resetCell()
 {
 	checking = false;
-	if (blocked == false)
+	blocked = false;
+	if (blocked == false && lockedIn == false)
 	{
 		shape.setFillColor(sf::Color::White);
 	}
+	if (lockedIn == true)
+	{
+		shape.setFillColor(sf::Color::Blue);
+	}
+}
+
+void Cell::lockInCell()
+{
+	shape.setFillColor(sf::Color::Blue);
+	lockedIn = true;
 }
 
 Cell* Cell::up()
