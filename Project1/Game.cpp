@@ -10,11 +10,13 @@
 /// default constructor
 /// </summary>
 Game::Game() :
-	m_window{ sf::VideoMode{ 1000, 1000, 32U }, "SFML Game" },
+	m_window{ sf::VideoMode{ 1400, 1000, 32U }, "SFML Game" },
 	m_exitGame{ false } //when true game will exit
 
 {
 	initialize();
+	scoreManager.intialize(&Grid);
+	fonts.initialize();
 }
 
 /// <summary>
@@ -84,8 +86,11 @@ void Game::processKeys(sf::Event t_event)
 	}
 	if (sf::Keyboard::Space == t_event.key.code)
 	{
-		if (!outOfBounds)
+		if (!outOfBounds) 
+		{
 			placeBuilding();
+			changeTurns();
+		}
 	}
 	if (sf::Keyboard::R == t_event.key.code)
 	{
@@ -101,6 +106,11 @@ void Game::processKeys(sf::Event t_event)
 	{
 		currentHoveredCell = nullptr;
 		swapBuilding(-1);
+	}
+
+	if (sf::Keyboard::Z == t_event.key.code)
+	{
+		//fillTool();
 	}
 }
 
@@ -124,7 +134,7 @@ void Game::update(sf::Time t_deltaTime)
 		m_window.close();
 	}
 	mousePosition = getMousePosition(m_window);
-	constructCathedral();
+	outlineBuilding();
 }
 
 /// <summary>
@@ -141,6 +151,8 @@ void Game::render()
 			cell.render(m_window);
 		}
 	}
+
+	fonts.render(m_window);
 
 	m_window.display();
 }
@@ -177,7 +189,7 @@ void Game::initialize()
 	instructions = construction.instructions[0];
 }
 
-void Game::constructCathedral()
+void Game::outlineBuilding()
 {
 	for (auto& row : Grid)
 	{
@@ -192,45 +204,89 @@ void Game::constructCathedral()
 				Cell* cellToCheck = currentHoveredCell;
 				cellToCheck->checkCell();
 
+				std::vector<Cell*> placementCells; // Hold the current placement cells colored green
+				placementCells.push_back(cellToCheck);
+
 				for (std::string direction : instructions)
 				{
 					if (direction == "up")
 					{
-						cellToCheck = cellToCheck->up();
-						if (cellToCheck != nullptr)
-							cellToCheck->checkCell();
-						if (cellToCheck == nullptr)
+						// Out of Bounds
+						if (cellToCheck == nullptr || cellToCheck->up() == nullptr) 
+						{
 							outOfBounds = true;
+						}
+						else {
+							cellToCheck = cellToCheck->up();
+							cellToCheck->checkCell();
+							placementCells.push_back(cellToCheck);
+						}
+
 					}
 					else if (direction == "down")
 					{
-						cellToCheck = cellToCheck->down();
-						if (cellToCheck != nullptr)
-							cellToCheck->checkCell();
-						if (cellToCheck == nullptr)
+						// Out of Bounds
+						if (cellToCheck == nullptr || cellToCheck->down() == nullptr)
+						{
 							outOfBounds = true;
+						}
+						else {
+							cellToCheck = cellToCheck->down();
+							cellToCheck->checkCell();
+							placementCells.push_back(cellToCheck);
+						}
 					}
 					else if (direction == "right")
-					{
-						cellToCheck = cellToCheck->right();
-						if (cellToCheck != nullptr)
-							cellToCheck->checkCell();
-						if (cellToCheck == nullptr)
+					{		
+						// Out of Bounds
+						if (cellToCheck == nullptr || cellToCheck->right() == nullptr)
+						{
 							outOfBounds = true;
+						}
+						else {
+							cellToCheck = cellToCheck->right();
+							cellToCheck->checkCell();
+							placementCells.push_back(cellToCheck);
+						}
 					}
 					else if (direction == "left")
 					{
-						cellToCheck = cellToCheck->left();
-						if (cellToCheck != nullptr)
-							cellToCheck->checkCell();
-						if (cellToCheck == nullptr)
+						// Out of Bounds
+						if (cellToCheck == nullptr || cellToCheck->left() == nullptr)
+						{
 							outOfBounds = true;
+						}
+						else {
+							cellToCheck = cellToCheck->left();
+							cellToCheck->checkCell();
+							placementCells.push_back(cellToCheck);
+						}
 					}
 					else if (direction == "middle")
 					{
 						cellToCheck = currentHoveredCell;
 					}
 				}
+				// Check for filled space
+				for (auto& cell : placementCells)
+				{		
+					for (auto& cell : cell->neighbours)
+					{
+						if (turns >= 2 && 
+							cell != nullptr &&
+							cell->getShape().getFillColor() != sf::Color::Green)
+						{
+							fillTool(cell);
+						}
+					}						
+				}
+				// Get Score for current layout
+				scoreManager.gatherScore(currentPlayer);
+
+				if (currentPlayer == "player")
+					fonts.setPlayerScoreText(scoreManager.getScore());
+				if (currentPlayer == "enemy")
+					fonts.setEnemyScoreText(scoreManager.getScore());
 			}
 		}
 	}
@@ -323,11 +379,22 @@ void Game::placeBuilding()
 
 				if (currentCell->isChecked() == true && currentCell->isBlocked() == false)
 				{
-					currentCell->lockInCell();
+					currentCell->lockInCell(currentPlayer);
+				}
+
+				if (currentCell->getShape().getFillColor() == currentPlayerColor)
+				{
+					currentCell->lockInCell(currentPlayer);
 				}
 			}
 		}
 	}
+	// Remove building from play
+	if (currentPlayer == "player")
+		construction.instructions.erase(construction.instructions.begin() + currentBuildingChoice);
+	else
+		enemyConstruction.instructions.erase(enemyConstruction.instructions.begin() + currentBuildingChoice);
+	fonts.setRemainingBuildingsText(construction.instructions.size());
 }
 
 void Game::swapBuilding(int t_i)
@@ -346,14 +413,88 @@ void Game::swapBuilding(int t_i)
 		currentBuildingChoice = MAX;
 	}
 
-	instructions = construction.instructions[currentBuildingChoice];
+	if (currentPlayer == "player")
+		instructions = construction.instructions[currentBuildingChoice];
+	else
+		instructions = enemyConstruction.instructions[currentBuildingChoice];
 }
 
-sf::Vector2f Game::gridPlacement()
+void Game::changeTurns()
 {
-	mouseGridPlacement.x = (static_cast<int>(mousePosition.x) / 100) * 100;
-	mouseGridPlacement.y = (static_cast<int>(mousePosition.y) / 100) * 100;
-	return mouseGridPlacement;
+	if (currentPlayer == "player")
+	{
+		currentPlayer = "enemy";
+		currentEnemy = "player";
+		currentPlayerColor = sf::Color::Magenta;
+	}
+	else if (currentPlayer == "enemy")
+	{
+		currentPlayer = "player";
+		currentEnemy = "enemy";
+		currentPlayerColor = sf::Color::Blue;
+	}
+	fonts.setCurrentTurnText(currentPlayer);
+	turns++;
+
+	// Setting the correct constructions or the correct player 
+	currentBuildingChoice = 0;
+	if (currentPlayer == "player")
+		instructions = construction.instructions[currentBuildingChoice];
+	else
+		instructions = enemyConstruction.instructions[currentBuildingChoice];
+}
+
+void Game::fillTool(Cell* t_cell)
+{
+	Cell* startingCell = t_cell;
+	std::queue<Cell*> q;
+	std::unordered_set<Cell*> visited; // Track visited cells
+	std::vector<Cell*> temporarilyChanged; // Track white cells changed to blue
+	
+	if (t_cell->getOwner() != "none") // Only start from unowned cells
+		return; 
+
+	q.push(startingCell);
+	temporarilyChanged.push_back(startingCell);
+	startingCell->setColor(currentPlayerColor);
+
+	bool isEnclosed = true;
+
+	while (!q.empty()) {
+		Cell* currentCellToCheck = q.front();
+		q.pop();
+
+		if (visited.find(currentCellToCheck) != visited.end())
+			continue; // Skip already visited cells
+
+		visited.insert(currentCellToCheck);
+
+		for (auto* neighbor : currentCellToCheck->neighbours) {
+			if (!neighbor || visited.find(neighbor) != visited.end())
+				continue;
+
+			std::string owner = neighbor->getOwner();
+
+			if (owner == currentPlayer || neighbor->isChecked() == true) {
+				continue; // Don't expand further from current cells
+			}
+			else if (owner == "none") {
+				neighbor->setColor(currentPlayerColor);
+				temporarilyChanged.push_back(neighbor);
+				q.push(neighbor);
+			}
+			else if (owner == currentEnemy) {
+				isEnclosed = false; // Enemy cells break the loop
+			}
+		}
+	}
+
+	if (!isEnclosed) {
+		// Revert all temporarily changed cells to white
+		for (auto* cell : temporarilyChanged) {
+			cell->setColor(sf::Color::White);
+		}
+	}
 }
 
 sf::Vector2f Game::getMousePosition(sf::RenderWindow& t_window)
@@ -365,50 +506,3 @@ sf::Vector2f Game::getMousePosition(sf::RenderWindow& t_window)
 
 	return m_mousePosition;
 }
-
-
-
-/// <summary>
-/// loads the background for the game
-/// </summary>
-//void Game::loadTextures()
-//{
-//	//Robot
-//	if (!robotTexture.loadFromFile("robot.png"))
-//	{
-//		std::cout << "problem loading robot" << std::endl;
-//	}
-//	robot.setTexture(robotTexture);
-//	robot.setTextureRect(sf::IntRect{ 0,0,width,height });
-//	robot.setOrigin(width/2, height/2);
-//	robot.setScale(0.5f, 0.5f);
-//	robot.setPosition(startPos);
-//	
-//	//Flower
-//	if (!flowerTexture.loadFromFile("plant.png"))
-//	{
-//		std::cout << "problem loading flower" << std::endl;
-//	}
-//	flower.setTexture(flowerTexture);
-//	flower.setTextureRect(sf::IntRect{ 0,0,100,229 });
-//	flower.setScale(0.2f, 0.2f);
-//	flower.setPosition(startPos.x + 570, startPos.y - 10);
-//
-//	//Background
-//	if (!gameBackground.loadFromFile("background.jpg"))
-//	{
-//		std::cout << "problem loading background" << std::endl;
-//	}
-//	backgroundSprite.setTexture(gameBackground);
-//	backgroundSprite.setTextureRect(sf::IntRect{ 0,0,819,175 });
-//}
-//void Game::loadMusic()
-//{
-//	if (!music.openFromFile("music.wav"))
-//	{
-//		std::cout << "problem loading music" << std::endl;
-//	}
-//	music.play();
-//	music.setVolume(10.0f);
-//}
-//

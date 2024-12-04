@@ -1,15 +1,3 @@
 ﻿C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(531,5): warning MSB8028: The intermediate directory (x64\Debug\) contains files shared from another project (CowStrike.vcxproj, Project1.vcxproj).  This can lead to incorrect clean and rebuild behavior.
-  Game.cpp
-C:\Users\Archi\Desktop\Work\CathedralBoardGame\Project1\Game.cpp(335,51): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-C:\Users\Archi\Desktop\Work\CathedralBoardGame\Project1\Game.cpp(335,16): warning C4267: 'initializing': conversion from 'size_t' to 'const int', possible loss of data
-C:\Users\Archi\Desktop\Work\CathedralBoardGame\Project1\Game.cpp(354,67): warning C4244: '=': conversion from 'int' to 'T', possible loss of data
-C:\Users\Archi\Desktop\Work\CathedralBoardGame\Project1\Game.cpp(354,67): warning C4244:         with
-C:\Users\Archi\Desktop\Work\CathedralBoardGame\Project1\Game.cpp(354,67): warning C4244:         [
-C:\Users\Archi\Desktop\Work\CathedralBoardGame\Project1\Game.cpp(354,67): warning C4244:             T=float
-C:\Users\Archi\Desktop\Work\CathedralBoardGame\Project1\Game.cpp(354,67): warning C4244:         ]
-C:\Users\Archi\Desktop\Work\CathedralBoardGame\Project1\Game.cpp(355,67): warning C4244: '=': conversion from 'int' to 'T', possible loss of data
-C:\Users\Archi\Desktop\Work\CathedralBoardGame\Project1\Game.cpp(355,67): warning C4244:         with
-C:\Users\Archi\Desktop\Work\CathedralBoardGame\Project1\Game.cpp(355,67): warning C4244:         [
-C:\Users\Archi\Desktop\Work\CathedralBoardGame\Project1\Game.cpp(355,67): warning C4244:             T=float
-C:\Users\Archi\Desktop\Work\CathedralBoardGame\Project1\Game.cpp(355,67): warning C4244:         ]
-  Project1.vcxproj -> C:\Users\Archi\Desktop\Work\CathedralBoardGame\x64\Debug\Cathedral.exe
+  Fonts.cpp
+  Project1.vcxproj -> C:\Users\Archi\Desktop\College Work\Year 4\CathedralBoardGame\x64\Debug\Cathedral.exe

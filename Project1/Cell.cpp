@@ -4,7 +4,7 @@ Cell::Cell()
 {
 	shape.setSize({100,100});
 	shape.setFillColor(sf::Color::White);
-	shape.setOutlineColor(sf::Color::Blue);
+	shape.setOutlineColor(sf::Color::Black);
 	shape.setOutlineThickness(1);
 }
 
@@ -36,16 +36,36 @@ void Cell::resetCell()
 	{
 		shape.setFillColor(sf::Color::White);
 	}
-	if (lockedIn == true)
+	if (lockedIn == true && owner == "player")
 	{
 		shape.setFillColor(sf::Color::Blue);
 	}
+	if (lockedIn == true && owner == "enemy")
+	{
+		shape.setFillColor(sf::Color::Magenta);
+	}
 }
 
-void Cell::lockInCell()
+void Cell::lockInCell(std::string t_player)
 {
-	shape.setFillColor(sf::Color::Blue);
+	if (t_player == "player")
+		shape.setFillColor(sf::Color::Blue);
+	if (t_player == "enemy")
+		shape.setFillColor(sf::Color::Magenta);
+
+	owner = t_player;
 	lockedIn = true;
+}
+
+void Cell::unlockCell()
+{
+	if (shape.getFillColor() != sf::Color::Green)
+		shape.setFillColor(sf::Color::White);
+	if (checking == true)
+		shape.setFillColor(sf::Color::Green);
+
+	owner = "none";
+	lockedIn = false;
 }
 
 Cell* Cell::up()
