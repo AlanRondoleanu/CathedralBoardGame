@@ -28,6 +28,15 @@ void Cell::checkCell()
 	}
 }
 
+void Cell::uncheckCell()
+{
+	if (owner == "none")
+	{
+		checking = false;
+		shape.setFillColor(sf::Color::White);
+	}
+}
+
 void Cell::resetCell()
 {
 	checking = false;
@@ -66,6 +75,11 @@ void Cell::unlockCell()
 
 	owner = "none";
 	lockedIn = false;
+}
+
+void Cell::setDebug()
+{
+	debug = true;
 }
 
 Cell* Cell::up()

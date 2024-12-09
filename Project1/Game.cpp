@@ -17,6 +17,7 @@ Game::Game() :
 	initialize();
 	scoreManager.intialize(&Grid);
 	fonts.initialize();
+	minimax.initalize(&Grid);
 }
 
 /// <summary>
@@ -86,11 +87,7 @@ void Game::processKeys(sf::Event t_event)
 	}
 	if (sf::Keyboard::Space == t_event.key.code)
 	{
-		if (!outOfBounds) 
-		{
-			placeBuilding();
-			changeTurns();
-		}
+		placeBuilding();
 	}
 	if (sf::Keyboard::R == t_event.key.code)
 	{
@@ -110,7 +107,7 @@ void Game::processKeys(sf::Event t_event)
 
 	if (sf::Keyboard::Z == t_event.key.code)
 	{
-		//fillTool();
+		minimax.minimax(&enemyConstruction);
 	}
 }
 
@@ -134,7 +131,18 @@ void Game::update(sf::Time t_deltaTime)
 		m_window.close();
 	}
 	mousePosition = getMousePosition(m_window);
-	outlineBuilding();
+	getHoveredCell();
+
+	if (currentPlayer == "enemy")
+	{
+		int pieceUsed;
+		pieceUsed = minimax.minimax(&enemyConstruction);
+		enemyConstruction.instructions.erase(enemyConstruction.instructions.begin() + pieceUsed);
+		fonts.setRemainingBuildingsText(construction.instructions.size());
+		scoreManager.gatherScore(currentPlayer);
+		fonts.setEnemyScoreText(scoreManager.getEnemyScore());
+		changeTurns();
+	}
 }
 
 /// <summary>
@@ -189,7 +197,7 @@ void Game::initialize()
 	instructions = construction.instructions[0];
 }
 
-void Game::outlineBuilding()
+void Game::getHoveredCell()
 {
 	for (auto& row : Grid)
 	{
@@ -198,98 +206,126 @@ void Game::outlineBuilding()
 			if (&cell != currentHoveredCell &&
 				cell.getShape().getGlobalBounds().contains(mousePosition))
 			{
-				resetAllCells();
 				currentHoveredCell = &cell;
 
-				Cell* cellToCheck = currentHoveredCell;
-				cellToCheck->checkCell();
-
-				std::vector<Cell*> placementCells; // Hold the current placement cells colored green
-				placementCells.push_back(cellToCheck);
-
-				for (std::string direction : instructions)
-				{
-					if (direction == "up")
-					{
-						// Out of Bounds
-						if (cellToCheck == nullptr || cellToCheck->up() == nullptr) 
-						{
-							outOfBounds = true;
-						}
-						else {
-							cellToCheck = cellToCheck->up();
-							cellToCheck->checkCell();
-							placementCells.push_back(cellToCheck);
-						}
-
-					}
-					else if (direction == "down")
-					{
-						// Out of Bounds
-						if (cellToCheck == nullptr || cellToCheck->down() == nullptr)
-						{
-							outOfBounds = true;
-						}
-						else {
-							cellToCheck = cellToCheck->down();
-							cellToCheck->checkCell();
-							placementCells.push_back(cellToCheck);
-						}
-					}
-					else if (direction == "right")
-					{		
-						// Out of Bounds
-						if (cellToCheck == nullptr || cellToCheck->right() == nullptr)
-						{
-							outOfBounds = true;
-						}
-						else {
-							cellToCheck = cellToCheck->right();
-							cellToCheck->checkCell();
-							placementCells.push_back(cellToCheck);
-						}
-					}
-					else if (direction == "left")
-					{
-						// Out of Bounds
-						if (cellToCheck == nullptr || cellToCheck->left() == nullptr)
-						{
-							outOfBounds = true;
-						}
-						else {
-							cellToCheck = cellToCheck->left();
-							cellToCheck->checkCell();
-							placementCells.push_back(cellToCheck);
-						}
-					}
-					else if (direction == "middle")
-					{
-						cellToCheck = currentHoveredCell;
-					}
-				}
-				// Check for filled space
-				for (auto& cell : placementCells)
-				{		
-					for (auto& cell : cell->neighbours)
-					{
-						if (turns >= 2 && 
-							cell != nullptr &&
-							cell->getShape().getFillColor() != sf::Color::Green)
-						{
-							fillTool(cell);
-						}
-					}						
-				}
-				// Get Score for current layout
-				scoreManager.gatherScore(currentPlayer);
-
-				if (currentPlayer == "player")
-					fonts.setPlayerScoreText(scoreManager.getScore());
-				if (currentPlayer == "enemy")
-					fonts.setEnemyScoreText(scoreManager.getScore());
+				outlineBuilding(currentHoveredCell);
 			}
 		}
 	}
+}
+
+void Game::outlineBuilding(Cell* t_cell)
+{
+	// Resets all cell colors
+	resetAllCells();
+
+	// Set cell to outline first
+	Cell* cellToCheck = t_cell;
+	cellToCheck->checkCell();
+
+	std::vector<Cell*> placementCells; // Hold the current placement cells colored green
+	placementCells.push_back(cellToCheck);
+
+	for (std::string direction : instructions)
+	{
+		if (direction == "up")
+		{
+			// Out of Bounds
+			if (cellToCheck == nullptr || cellToCheck->up() == nullptr)
+			{
+				outOfBounds = true;
+			}
+			else {
+				cellToCheck = cellToCheck->up();
+				cellToCheck->checkCell();
+				placementCells.push_back(cellToCheck);
+			}
+
+		}
+		else if (direction == "down")
+		{
+			// Out of Bounds
+			if (cellToCheck == nullptr || cellToCheck->down() == nullptr)
+			{
+				outOfBounds = true;
+			}
+			else {
+				cellToCheck = cellToCheck->down();
+				cellToCheck->checkCell();
+				placementCells.push_back(cellToCheck);
+			}
+		}
+		else if (direction == "right")
+		{		
+			// Out of Bounds
+			if (cellToCheck == nullptr || cellToCheck->right() == nullptr)
+			{
+				outOfBounds = true;
+			}
+			else {
+				cellToCheck = cellToCheck->right();
+				cellToCheck->checkCell();
+				placementCells.push_back(cellToCheck);
+			}
+		}
+		else if (direction == "left")
+		{
+			// Out of Bounds
+			if (cellToCheck == nullptr || cellToCheck->left() == nullptr)
+			{
+				outOfBounds = true;
+			}
+			else {
+				cellToCheck = cellToCheck->left();
+				cellToCheck->checkCell();
+				placementCells.push_back(cellToCheck);
+			}
+		}
+		else if (direction == "middle")
+		{
+			cellToCheck = currentHoveredCell;
+		}
+	}
+
+	// Check for blocked cells
+	for (auto& cell : placementCells)
+	{
+		if (cell->isBlocked() == true)
+		{
+			outOfBounds = true;
+		}
+	}
+
+	// If out of bounds color cells red
+	if (outOfBounds == true)
+	{
+		for (auto& cell : placementCells)
+		{
+			cell->setColor(sf::Color::Red);
+		}
+	}
+
+	// Checks if there is any encircled white spaces to fill
+	for (auto& cell : placementCells)
+	{		
+		for (auto& cell : cell->neighbours)
+		{
+			if (turns >= 2 && 
+				cell != nullptr &&
+				cell->getShape().getFillColor() != sf::Color::Green)
+			{
+				fillTool(cell);
+			}
+		}						
+	}
+	// Get Score for current layout
+	scoreManager.gatherScore(currentPlayer);
+
+	if (currentPlayer == "player")
+		fonts.setPlayerScoreText(scoreManager.getScore());
+	if (currentPlayer == "enemy")
+		fonts.setEnemyScoreText(scoreManager.getScore());
+	
 }
 
 void Game::setNeighbours()
@@ -354,47 +390,58 @@ void Game::resetAllCells()
 
 void Game::placeBuilding()
 {
-	// Check if any checked cells are blocked
-	bool invalidPlacement = false;
-	for (int o = 0; o < CELL_AMOUNT; o++)
+	if (!outOfBounds)
 	{
-		for (int i = 0; i < CELL_AMOUNT; i++)
-		{
-			Cell* currentCell = &Grid[o][i];
-
-			if (currentCell->isBlocked() == true)
-			{
-				invalidPlacement = true;
-			}
-		}
-	}
-	// If no checked cells are blocked, lock them in
-	if (invalidPlacement == false)
-	{
+		// Check if any checked cells are blocked
+		bool invalidPlacement = false;
 		for (int o = 0; o < CELL_AMOUNT; o++)
 		{
 			for (int i = 0; i < CELL_AMOUNT; i++)
 			{
 				Cell* currentCell = &Grid[o][i];
 
-				if (currentCell->isChecked() == true && currentCell->isBlocked() == false)
+				if (currentCell->isBlocked() == true)
 				{
-					currentCell->lockInCell(currentPlayer);
-				}
-
-				if (currentCell->getShape().getFillColor() == currentPlayerColor)
-				{
-					currentCell->lockInCell(currentPlayer);
+					invalidPlacement = true;
 				}
 			}
 		}
+
+		// If no checked cells are blocked, lock them in
+		if (invalidPlacement == false)
+		{
+			for (int o = 0; o < CELL_AMOUNT; o++)
+			{
+				for (int i = 0; i < CELL_AMOUNT; i++)
+				{
+					Cell* currentCell = &Grid[o][i];
+
+					if (currentCell->isChecked() == true && currentCell->isBlocked() == false)
+					{
+						currentCell->lockInCell(currentPlayer);
+					}
+
+					if (currentCell->getShape().getFillColor() == currentPlayerColor)
+					{
+						currentCell->lockInCell(currentPlayer);
+					}
+				}
+			}
+		}
+
+		// Remove building used from play
+		if (currentPlayer == "player")
+		{
+			construction.instructions.erase(construction.instructions.begin() + currentBuildingChoice);
+		}
+		else {
+			enemyConstruction.instructions.erase(enemyConstruction.instructions.begin() + currentBuildingChoice);
+			fonts.setRemainingBuildingsText(construction.instructions.size());
+		}
+
+		// Change turns
+		changeTurns();
 	}
-	// Remove building from play
-	if (currentPlayer == "player")
-		construction.instructions.erase(construction.instructions.begin() + currentBuildingChoice);
-	else
-		enemyConstruction.instructions.erase(enemyConstruction.instructions.begin() + currentBuildingChoice);
-	fonts.setRemainingBuildingsText(construction.instructions.size());
 }
 
 void Game::swapBuilding(int t_i)
@@ -442,6 +489,8 @@ void Game::changeTurns()
 		instructions = construction.instructions[currentBuildingChoice];
 	else
 		instructions = enemyConstruction.instructions[currentBuildingChoice];
+
+	minimax.changeTurns();
 }
 
 void Game::fillTool(Cell* t_cell)
@@ -450,9 +499,9 @@ void Game::fillTool(Cell* t_cell)
 	std::queue<Cell*> q;
 	std::unordered_set<Cell*> visited; // Track visited cells
 	std::vector<Cell*> temporarilyChanged; // Track white cells changed to blue
-	
+
 	if (t_cell->getOwner() != "none") // Only start from unowned cells
-		return; 
+		return;
 
 	q.push(startingCell);
 	temporarilyChanged.push_back(startingCell);
@@ -492,7 +541,9 @@ void Game::fillTool(Cell* t_cell)
 	if (!isEnclosed) {
 		// Revert all temporarily changed cells to white
 		for (auto* cell : temporarilyChanged) {
-			cell->setColor(sf::Color::White);
+
+			if (cell->isChecked() == false)
+				cell->setColor(sf::Color::White);
 		}
 	}
 }

@@ -149,6 +149,7 @@
     <ClCompile Include="Fonts.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="MiniMax.cpp" />
     <ClCompile Include="ScoreManager.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -156,6 +157,7 @@
     <ClInclude Include="Cell.h" />
     <ClInclude Include="Fonts.h" />
     <ClInclude Include="Game.h" />
+    <ClInclude Include="MiniMax.h" />
     <ClInclude Include="ScoreManager.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

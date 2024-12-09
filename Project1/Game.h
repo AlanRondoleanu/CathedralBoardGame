@@ -14,6 +14,7 @@
 #include "CathderalConstruction.h"
 #include "ScoreManager.h"
 #include "Fonts.h"
+#include "MiniMax.h"
 
 class Game
 {
@@ -31,7 +32,8 @@ private:
 	void update(sf::Time t_deltaTime);
 	void render();
 	void initialize();
-	void outlineBuilding();
+	void getHoveredCell();
+	void outlineBuilding(Cell* t_cell);
 	void setNeighbours();
 	void resetAllCells();
 	void placeBuilding();
@@ -53,6 +55,9 @@ private:
 	std::vector<std::string> instructions;
 	bool outOfBounds{ false };
 	int currentBuildingChoice{ 0 };
+
+	// Minimax
+	MiniMax minimax;
 
 	// Fonts
 	Fonts fonts;
